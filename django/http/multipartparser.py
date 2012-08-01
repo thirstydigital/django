@@ -151,7 +151,7 @@ class MultiPartParser(object):
                 transfer_encoding = meta_data.get('content-transfer-encoding')
                 if transfer_encoding is not None:
                     transfer_encoding = transfer_encoding[0].strip()
-                field_name = force_unicode(field_name, encoding, errors='replace')
+                field_name = force_unicode(field_name, encoding, errors='strict')
 
                 if item_type == FIELD:
                     # This is a post field, we can just set it in the post
@@ -165,13 +165,13 @@ class MultiPartParser(object):
                         data = field_stream.read()
 
                     self._post.appendlist(field_name,
-                                          force_unicode(data, encoding, errors='replace'))
+                                          force_unicode(data, encoding, errors='strict'))
                 elif item_type == FILE:
                     # This is a file, use the handler...
                     file_name = disposition.get('filename')
                     if not file_name:
                         continue
-                    file_name = force_unicode(file_name, encoding, errors='replace')
+                    file_name = force_unicode(file_name, encoding, errors='strict')
                     file_name = self.IE_sanitize(unescape_entities(file_name))
 
                     content_type = meta_data.get('content-type', ('',))[0].strip()
@@ -247,7 +247,7 @@ class MultiPartParser(object):
                 # If it returns a file object, then set the files dict.
                 self._files.appendlist(force_unicode(old_field_name,
                                                      self._encoding,
-                                                     errors='replace'),
+                                                     errors='strict'),
                                        file_obj)
                 break
 
