@@ -146,3 +146,17 @@ class TermColorTests(unittest.TestCase):
         self.assertEqual(parse_color_setting('error=green,bLiNk'),
                           dict(PALETTES[NOCOLOR_PALETTE],
                             ERROR={'fg':'green', 'opts': ('blink',)}))
+
+    def test_custom_palette(self):
+        custom_palettes = PALETTES.copy()
+        custom_palettes[NOCOLOR_PALETTE].update({'WARNING': {}, 'NOTICE': {}})
+        custom_palettes[DARK_PALETTE].update({'WARNING': {'fg': 'yellow'}, 'NOTICE': {'fg': 'cyan'}})
+        custom_palettes[LIGHT_PALETTE].update({'WARNING': {'fg': 'black', 'bg': 'yellow'}, 'NOTICE': {'fg': 'blue'}})
+        # empty string.
+        self.assertEquals(parse_color_setting('', custom_palettes), custom_palettes[DEFAULT_PALETTE])
+        # simple palette.
+        self.assertEquals(parse_color_setting('light', custom_palettes), custom_palettes[LIGHT_PALETTE])
+        # override palette.
+        self.assertEquals(parse_color_setting('light;error=green', custom_palettes),
+                          dict(custom_palettes[LIGHT_PALETTE],
+                            ERROR={'fg':'green'}))
