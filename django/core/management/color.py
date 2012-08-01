@@ -19,20 +19,20 @@ def supports_color():
         return False
     return True
 
-def color_style():
+def color_style(palettes=termcolors.PALETTES):
     """Returns a Style object with the Django color scheme."""
     if not supports_color():
         style = no_style()
     else:
         DJANGO_COLORS = os.environ.get('DJANGO_COLORS', '')
-        color_settings = termcolors.parse_color_setting(DJANGO_COLORS)
+        color_settings = termcolors.parse_color_setting(DJANGO_COLORS, palettes)
         if color_settings:
             class dummy: pass
             style = dummy()
             # The nocolor palette has all available roles.
             # Use that pallete as the basis for populating
             # the palette as defined in the environment.
-            for role in termcolors.PALETTES[termcolors.NOCOLOR_PALETTE]:
+            for role in palettes[termcolors.NOCOLOR_PALETTE]:
                 format = color_settings.get(role,{})
                 setattr(style, role, termcolors.make_style(**format))
             # For backwards compatibility,
