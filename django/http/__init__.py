@@ -518,7 +518,7 @@ class HttpResponse(object):
     status_code = 200
 
     def __init__(self, content='', content_type=None, status=None,
-            mimetype=None):
+            mimetype=None, stream_content=False):
         # _headers is a mapping of the lower-case name to the original case of
         # the header (required for working with legacy systems) and the header
         # value. Both the name of the header and its value are ASCII strings.
@@ -531,6 +531,7 @@ class HttpResponse(object):
         if not content_type:
             content_type = "%s; charset=%s" % (settings.DEFAULT_CONTENT_TYPE,
                     self._charset)
+        self._stream_content = stream_content
         self.content = content
         self.cookies = SimpleCookie()
         if status:
@@ -645,7 +646,13 @@ class HttpResponse(object):
         self.set_cookie(key, max_age=0, path=path, domain=domain,
                         expires='Thu, 01-Jan-1970 00:00:00 GMT')
 
+    def _consume_content(self):
+        if self._base_content_is_iter:
+            self._container = list(self._container)
+            self._base_content_is_iter = False
+
     def _get_content(self):
+        self._consume_content()
         if self.has_header('Content-Encoding'):
             return b''.join([str(e) for e in self._container])
         return b''.join([smart_str(e, self._charset) for e in self._container])
@@ -654,11 +661,21 @@ class HttpResponse(object):
         if hasattr(value, '__iter__'):
             self._container = value
             self._base_content_is_iter = True
+            if not self._stream_content:
+                self._consume_content()
         else:
             self._container = [value]
             self._base_content_is_iter = False
 
     content = property(_get_content, _set_content)
+
+    def _get_content_generator(self):
+        if self._base_content_is_iter:
+            if self.has_header('Content-Encoding'):
+                return (str(e) for e in self._container)
+            return (smart_str(e, self._charset) for e in self._container)
+
+    content_generator = property(_get_content_generator)
 
     def __iter__(self):
         self._iterator = iter(self._container)
