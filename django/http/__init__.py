@@ -526,7 +526,7 @@ class HttpResponse(object):
     status_code = 200
 
     def __init__(self, content='', content_type=None, status=None,
-            mimetype=None):
+            mimetype=None, stream_content=False):
         # _headers is a mapping of the lower-case name to the original case of
         # the header (required for working with legacy systems) and the header
         # value. Both the name of the header and its value are ASCII strings.
@@ -539,6 +539,7 @@ class HttpResponse(object):
         if not content_type:
             content_type = "%s; charset=%s" % (settings.DEFAULT_CONTENT_TYPE,
                     self._charset)
+        self.stream_content = stream_content
         # content is a bytestring. See the content property methods.
         self.content = content
         self.cookies = SimpleCookie()
@@ -679,8 +680,15 @@ class HttpResponse(object):
                     value = value.encode('ascii')
                 # force conversion to bytes in case chunk is a subclass
                 return bytes(value)
-            return b''.join(make_bytes(e) for e in self._container)
-        return b''.join(smart_bytes(e, self._charset) for e in self._container)
+            content = b''.join(make_bytes(e) for e in self._container)
+        content = b''.join(smart_bytes(e, self._charset) for e in self._container)
+        if self._base_content_is_iter:
+            self.content = content
+            if self.stream_content:
+                warnings.warn(
+                    'You cannot access HttpResponse.content when '
+                    'HttpResponse.stream_content is True.', PendingDeprecationWarning)
+        return content
 
     @content.setter
     def content(self, value):
