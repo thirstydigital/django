@@ -32,10 +32,15 @@ class Serializer(base.Serializer):
         self._current = None
 
     def get_dump_object(self, obj):
+        if not self.use_natural_primary_keys or not hasattr(obj, 'natural_key'):
+            return {
+                "pk": smart_unicode(obj._get_pk_val(), strings_only=True),
+                "model": smart_unicode(obj._meta),
+                "fields": self._current,
+            }
         return {
-            "pk": smart_unicode(obj._get_pk_val(), strings_only=True),
             "model": smart_unicode(obj._meta),
-            "fields": self._current
+            "fields": self._current,
         }
 
     def handle_field(self, obj, field):
@@ -49,7 +54,7 @@ class Serializer(base.Serializer):
             self._current[field.name] = field.value_to_string(obj)
 
     def handle_fk_field(self, obj, field):
-        if self.use_natural_keys and hasattr(field.rel.to, 'natural_key'):
+        if self.use_natural_foreign_keys and hasattr(field.rel.to, 'natural_key'):
             related = getattr(obj, field.name)
             if related:
                 value = related.natural_key()
@@ -61,7 +66,7 @@ class Serializer(base.Serializer):
 
     def handle_m2m_field(self, obj, field):
         if field.rel.through._meta.auto_created:
-            if self.use_natural_keys and hasattr(field.rel.to, 'natural_key'):
+            if self.use_natural_foreign_keys and hasattr(field.rel.to, 'natural_key'):
                 m2m_value = lambda value: value.natural_key()
             else:
                 m2m_value = lambda value: smart_unicode(value._get_pk_val(), strings_only=True)
@@ -83,7 +88,9 @@ def Deserializer(object_list, **options):
     for d in object_list:
         # Look up the model and starting build a dict of data for it.
         Model = _get_model(d["model"])
-        data = {Model._meta.pk.attname : Model._meta.pk.to_python(d["pk"])}
+        data = {}
+        if 'pk' in d:
+            data[Model._meta.pk.attname] = Model._meta.pk.to_python(d['pk'])
         m2m_data = {}
 
         # Handle each field
@@ -128,7 +135,9 @@ def Deserializer(object_list, **options):
             else:
                 data[field.name] = field.to_python(field_value)
 
-        yield base.DeserializedObject(Model(**data), m2m_data)
+        obj = base.build_instance(Model, data, db)
+
+        yield base.DeserializedObject(obj, m2m_data)
 
 def _get_model(model_identifier):
     """
