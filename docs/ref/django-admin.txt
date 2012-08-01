@@ -1410,6 +1410,18 @@ would specify the use of all the colors in the light color palette,
 *except* for the colors for errors and notices which would be
 overridden as specified.
 
+If you need to define new roles or default colors for use in your own
+management commands and still want to retain the ability for users to
+customize them with the ``DJANGO_COLORS`` environment variable, you can pass
+your own dictionary of color palettes to the ``color_style()`` function::
+
+    from django.core.management.color import color_style
+    from django.utils.termcolors import PALETTES
+    PALETTES['nocolor'].update(WARNING={})
+    PALETTES['dark'].update(WARNING={'fg': 'yellow'})
+    PALETTES['light'].update(WARNING={'fg': 'black', 'bg': 'yellow'})
+    style = color_style(PALETTES)
+
 Bash completion
 ---------------
 
