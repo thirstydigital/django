@@ -14,7 +14,7 @@ from django.http.multipartparser import MultiPartParser
 from django.test import TestCase, client
 from django.utils.encoding import smart_bytes
 from django.utils.six import StringIO
-from django.utils import unittest
+from django.utils import encoding, unittest
 
 from . import uploadhandler
 from .models import FileModel, temp_storage, UPLOAD_TO
@@ -104,6 +104,43 @@ class FileUploadTests(TestCase):
             pass
 
         self.assertEqual(response.status_code, 200)
+
+    def test_non_utf_post_data(self):
+        BIG5_STRING = u'test-0123456789_中文.jpg'
+
+        tdir = tempfile.gettempdir()
+
+        # This file contains chinese symbols in the name.
+        file1 = open(os.path.join(tdir, BIG5_STRING.encode('big5')), 'w+b')
+        file1.write('b' * (2 ** 10))
+        file1.seek(0)
+
+        self.assertRaises(
+            encoding.DjangoUnicodeDecodeError,
+            self.client.post,
+            '/file_uploads/unicode_name/',
+            {'file_unicode': file1}
+        )
+
+        file1.close()
+        try:
+            os.unlink(file1.name)
+        except:
+            pass
+
+        self.assertRaises(
+            encoding.DjangoUnicodeDecodeError,
+            self.client.post,
+            '/file_uploads/unicode_name/',
+            {BIG5_STRING.encode('big5'): 'string data'}
+        )
+
+        self.assertRaises(
+            encoding.DjangoUnicodeDecodeError,
+            self.client.post,
+            '/file_uploads/unicode_name/',
+            {'string data': BIG5_STRING.encode('big5')}
+        )
 
     def test_dangerous_file_names(self):
         """Uploaded file names should be sanitized before ever reaching the view."""
