@@ -138,7 +138,7 @@ PALETTES = {
 DEFAULT_PALETTE = DARK_PALETTE
 
 
-def parse_color_setting(config_string):
+def parse_color_setting(config_string, palettes=PALETTES):
     """Parse a DJANGO_COLORS environment variable to produce the system palette
 
     The general form of a pallete definition is:
@@ -155,6 +155,9 @@ def parse_color_setting(config_string):
     Specifying a named palette is the same as manually specifying the individual
     definitions for each role. Any individual definitions following the pallete
     definition will augment the base palette definition.
+
+    An alternate dictionary of palettes may be provided to extend or override
+    Django's default palettes (e.g. with new roles or different colours).
 
     Valid roles:
         'error', 'notice', 'sql_field', 'sql_coltype', 'sql_keyword', 'sql_table',
