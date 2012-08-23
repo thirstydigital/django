@@ -1,6 +1,6 @@
 import re
 
-from django.utils.text import compress_string
+from django.utils.text import compress_sequence, compress_string
 from django.utils.cache import patch_vary_headers
 
 re_accepts_gzip = re.compile(r'\bgzip\b')
@@ -13,7 +13,7 @@ class GZipMiddleware(object):
     """
     def process_response(self, request, response):
         # It's not worth attempting to compress really short responses.
-        if len(response.content) < 200:
+        if not response.stream_content and len(response.content) < 200:
             return response
 
         patch_vary_headers(response, ('Accept-Encoding',))
@@ -40,7 +40,11 @@ class GZipMiddleware(object):
         if response.has_header('ETag'):
             response['ETag'] = re.sub('"$', ';gzip"', response['ETag'])
 
-        response.content = compressed_content
+        if response.stream_content:
+            response.content = compress_sequence(response)
+            del response['Content-Length']
+        else:
+            response.content = compress_string(response.content)
+            response['Content-Length'] = str(len(response.content))
         response['Content-Encoding'] = 'gzip'
-        response['Content-Length'] = str(len(response.content))
         return response
