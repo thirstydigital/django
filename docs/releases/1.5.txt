@@ -86,9 +86,41 @@ associated with proxy models.
 
 New ``view`` variable in class-based views context
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 In all :doc:`generic class-based views </topics/class-based-views/index>`
 (or any class-based view inheriting from ``ContextMixin``), the context dictionary
 contains a ``view`` variable that points to the ``View`` instance.
+
+Explicit support for streaming responses with ``HttpStreamingResponse`` class
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Previously, you could generate a streaming response by passing an iterator as
+content to :class:`~django.http.HttpResponse`. But this was not explicitly 
+documented, and was not always guaranteed to generate a streaming response
+because any middleware that accessed the :attr:`~django.http.HttpResponse.content`
+attribute would consume the iterator prematurely.
+
+In Django 1.5 you can explicitly generate a streaming response with the new
+:class:`~django.http.HttpStreamingResponse` class. This new class exposes a
+:class:`~django.http.HttpStreamingResponse.streaming_content` attribute, that
+you can safely wrap or replace, without consuming the content.
+
+Unlike the :class:`~django.http.HttpResponse` class, this new response class
+does not have a ``content`` attribute.
+
+As a result, middleware can no longer be guaranteed that all responses will
+have a ``content`` attribute. Middleware should inspect the response and
+behave accordingly::
+
+    if hasattr(response, 'content'):
+        response.content = wrap_content(response.content)
+    elif hasattr(response, 'streaming_content'):
+        response.streaming_content = wrap_streaming_content(response.streaming_content)
+
+When passing an iterator as content to the :class:`~django.http.HttpResponse`
+class, Django will consume the iterator immediately to prevent buggy behaviour
+when the :attr:`~django.http.HttpResponse.content` attribute is accessed
+multiple times.
 
 Minor features
 ~~~~~~~~~~~~~~
