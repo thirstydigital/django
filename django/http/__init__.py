@@ -782,7 +782,7 @@ class HttpStreamingResponse(HttpResponseBase):
     A streaming HTTP response class with an iterator as content that should
     only be iterated once, when the response is streamed to the client.
 
-    However, the content can be appented to or replaced with a new iterator
+    However, the content can be appended to or replaced with a new iterator
     that wraps the original content (or yields entirely new content).
     """
 
