@@ -283,7 +283,7 @@ phone2numeric = allow_lazy(phone2numeric)
 # Used with permission.
 def compress_string(s):
     zbuf = BytesIO()
-    zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
+    zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf, mtime=0)
     zfile.write(s)
     zfile.close()
     return zbuf.getvalue()
