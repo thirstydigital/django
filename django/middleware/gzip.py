@@ -1,5 +1,8 @@
+import hashlib
 import re
 
+from django.conf import settings
+from django import http
 from django.utils.text import compress_string
 from django.utils.cache import patch_vary_headers
 
@@ -37,10 +40,18 @@ class GZipMiddleware(object):
         if len(compressed_content) >= len(response.content):
             return response
 
-        if response.has_header('ETag'):
-            response['ETag'] = re.sub('"$', ';gzip"', response['ETag'])
-
         response.content = compressed_content
         response['Content-Encoding'] = 'gzip'
         response['Content-Length'] = str(len(response.content))
+
+        # Use ETags, if requested.
+        if settings.USE_ETAGS:
+            etag = '"%s;gzip"' % hashlib.md5(response.serialize()).hexdigest()
+            if response.status_code >= 200 and response.status_code < 300 and request.META.get('HTTP_IF_NONE_MATCH') == etag:
+                cookies = response.cookies
+                response = http.HttpResponseNotModified()
+                response.cookies = cookies
+            else:
+                response['ETag'] = etag
+
         return response

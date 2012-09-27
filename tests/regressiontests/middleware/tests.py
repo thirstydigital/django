@@ -3,12 +3,14 @@
 import gzip
 import re
 import random
+import time
 from io import BytesIO
 
 from django.conf import settings
 from django.core import mail
 from django.http import HttpRequest
 from django.http import HttpResponse
+from django.http import HttpResponseNotModified
 from django.middleware.clickjacking import XFrameOptionsMiddleware
 from django.middleware.common import CommonMiddleware
 from django.middleware.http import ConditionalGetMiddleware
@@ -597,9 +599,10 @@ class ETagGZipMiddlewareTest(TestCase):
     def setUp(self):
         self.rf = RequestFactory()
 
-    def test_compress_response(self):
+    def test_with_etag(self):
         """
-        Tests that ETag is changed after gzip compression is performed.
+        Tests that existing ETag (set by CommonMiddleware) is changed after
+        gzip compression is performed.
         """
         request = self.rf.get('/', HTTP_ACCEPT_ENCODING='gzip, deflate')
         response = GZipMiddleware().process_response(request,
@@ -614,3 +617,30 @@ class ETagGZipMiddlewareTest(TestCase):
         nogzip_etag = response.get('ETag')
 
         self.assertNotEqual(gzip_etag, nogzip_etag)
+
+    def test_without_etag(self):
+        """
+        Tests that GZipMiddleware adds an ETag header to the response when one
+        is not already there, and that CommonMiddleware recognises it.
+        """
+        # See #16035 for more. This ensures that `CommonMiddleware.process_response()`
+        # still returns an `HttpResponseNotModified` when `GZipMiddleware.process_response()`
+        # is executed first.
+        request = self.rf.get('/', HTTP_ACCEPT_ENCODING='gzip, deflate')
+        response = CommonMiddleware().process_response(request,
+            GZipMiddleware().process_response(request,
+                HttpResponse(self.compressible_string)))
+        gzip_etag = response.get('ETag')
+        self.assertTrue(gzip_etag.endswith(';gzip"'))
+
+        # sleep for 1 second to check that we're explicitly setting the `mtime` on
+        # the compressed content so that we get the same output (and therefore, the
+        # same etag) for the same input.
+        time.sleep(1)
+
+        request = self.rf.get(
+            '/', HTTP_ACCEPT_ENCODING='gzip, deflate', HTTP_IF_NONE_MATCH=gzip_etag)
+        response = CommonMiddleware().process_response(request,
+            GZipMiddleware().process_response(request,
+                HttpResponse(self.compressible_string)))
+        self.assertIsInstance(response, HttpResponseNotModified)
