@@ -16,6 +16,7 @@ from django.db import connections, DEFAULT_DB_ALIAS
 from django.db.models import signals
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.query_utils import InvalidQuery
+from django.db.models.related import RelatedObject
 from django.db.models.sql import aggregates as base_aggregates_module
 from django.db.models.sql.constants import *
 from django.db.models.sql.datastructures import EmptyResultSet, Empty, MultiJoin
@@ -148,6 +149,7 @@ class Query(object):
 
         self.extra_tables = ()
         self.extra_order_by = ()
+        self.extra_join = ()
 
         # A tuple that is a set of model field names and either True, if these
         # are the fields to defer, or False if these are the only fields to
@@ -291,6 +293,7 @@ class Query(object):
             obj._extra_select_cache = self._extra_select_cache.copy()
         obj.extra_tables = self.extra_tables
         obj.extra_order_by = self.extra_order_by
+        obj.extra_join = self.extra_join
         obj.deferred_loading = copy.deepcopy(self.deferred_loading, memo=memo)
         if self.filter_is_sticky and self.used_aliases:
             obj.used_aliases = self.used_aliases.copy()
@@ -424,7 +427,7 @@ class Query(object):
 
     def has_results(self, using):
         q = self.clone()
-        q.add_extra({'a': 1}, None, None, None, None, None)
+        q.add_extra({'a': 1}, None, None, None, None, None, None)
         q.select = []
         q.select_fields = []
         q.default_cols = False
@@ -580,17 +583,22 @@ class Query(object):
             for name in parts[:-1]:
                 old_model = cur_model
                 source = opts.get_field_by_name(name)[0]
-                cur_model = opts.get_field_by_name(name)[0].rel.to
+                if isinstance(source, RelatedObject):
+                    cur_model = source.model
+                else:
+                    cur_model = source.rel.to
                 opts = cur_model._meta
                 # Even if we're "just passing through" this model, we must add
                 # both the current model's pk and the related reference field
-                # to the things we select.
-                must_include[old_model].add(source)
+                # (if it's not a reverse relation) to the things we select.
+                if not isinstance(source, RelatedObject):
+                    must_include[old_model].add(source)
                 add_to_dict(must_include, cur_model, opts.pk)
             field, model, _, _ = opts.get_field_by_name(parts[-1])
             if model is None:
                 model = cur_model
-            add_to_dict(seen, model, field)
+            if not isinstance(field, RelatedObject):
+                add_to_dict(seen, model, field)
 
         if defer:
             # We need to load all fields for each model, except those that
@@ -630,7 +638,6 @@ class Query(object):
             for model, values in seen.iteritems():
                 callback(target, model, values)
 
-
     def deferred_to_columns_cb(self, target, model, fields):
         """
         Callback used by deferred_to_columns(). The "target" parameter should
@@ -641,7 +648,6 @@ class Query(object):
             target[table] = set()
         for field in fields:
             target[table].add(field.column)
-
 
     def table_alias(self, table_name, create=False):
         """
@@ -1722,7 +1728,7 @@ class Query(object):
         self.related_select_cols = []
         self.related_select_fields = []
 
-    def add_extra(self, select, select_params, where, params, tables, order_by):
+    def add_extra(self, select, select_params, where, params, tables, order_by, join):
         """
         Adds data to the various extra_* attributes for user-created additions
         to the query.
@@ -1753,6 +1759,8 @@ class Query(object):
             self.extra_tables += tuple(tables)
         if order_by:
             self.extra_order_by = order_by
+        if join:
+            self.extra_join += tuple(join)
 
     def clear_deferred_loading(self):
         """

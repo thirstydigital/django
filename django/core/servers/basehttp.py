@@ -17,6 +17,16 @@ from SocketServer import ThreadingMixIn
 from wsgiref import simple_server
 from wsgiref.util import FileWrapper   # for backwards compatibility
 
+from django.conf import settings
+if settings.USE_MULTITHREADED_SERVER:
+    # This creates a base HTTPServer class that supports multithreading
+    import BaseHTTPServer, SocketServer
+    class HTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+        def __init__(self, server_address, RequestHandlerClass=None):
+            BaseHTTPServer.HTTPServer.__init__(self, server_address, RequestHandlerClass)
+else:
+    from BaseHTTPServer import HTTPServer
+
 import django
 from django.core.management.color import color_style
 from django.utils._os import safe_join

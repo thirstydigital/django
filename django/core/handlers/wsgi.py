@@ -205,6 +205,8 @@ class WSGIRequest(http.HttpRequest):
 class WSGIHandler(base.BaseHandler):
     initLock = Lock()
     request_class = WSGIRequest
+    response_fixes = [http.fix_location_header,
+                      http.conditional_content_removal]
 
     def __call__(self, environ, start_response):
         from django.conf import settings

@@ -50,8 +50,8 @@ def colorize(text='', opts=(), **kwargs):
         if o in opt_dict:
             code_list.append(opt_dict[o])
     if 'noreset' not in opts:
-        text = text + '\x1b[%sm' % RESET
-    return ('\x1b[%sm' % ';'.join(code_list)) + text
+        text = '%s\x1b[%sm' % (text, RESET)
+    return '\x1b[%sm%s' % (';'.join(code_list), text)
 
 def make_style(opts=(), **kwargs):
     """
@@ -71,12 +71,12 @@ LIGHT_PALETTE = 'light'
 
 PALETTES = {
     NOCOLOR_PALETTE: {
-        'ERROR':        {},
-        'NOTICE':       {},
-        'SQL_FIELD':    {},
-        'SQL_COLTYPE':  {},
-        'SQL_KEYWORD':  {},
-        'SQL_TABLE':    {},
+        'ERROR':             {},
+        'NOTICE':            {},
+        'SQL_FIELD':         {},
+        'SQL_COLTYPE':       {},
+        'SQL_KEYWORD':       {},
+        'SQL_TABLE':         {},
         'HTTP_INFO':         {},
         'HTTP_SUCCESS':      {},
         'HTTP_REDIRECT':     {},
@@ -86,12 +86,12 @@ PALETTES = {
         'HTTP_SERVER_ERROR': {},
     },
     DARK_PALETTE: {
-        'ERROR':        { 'fg': 'red', 'opts': ('bold',) },
-        'NOTICE':       { 'fg': 'red' },
-        'SQL_FIELD':    { 'fg': 'green', 'opts': ('bold',) },
-        'SQL_COLTYPE':  { 'fg': 'green' },
-        'SQL_KEYWORD':  { 'fg': 'yellow' },
-        'SQL_TABLE':    { 'opts': ('bold',) },
+        'ERROR':             { 'fg': 'red', 'opts': ('bold',) },
+        'NOTICE':            { 'fg': 'red' },
+        'SQL_FIELD':         { 'fg': 'green', 'opts': ('bold',) },
+        'SQL_COLTYPE':       { 'fg': 'green' },
+        'SQL_KEYWORD':       { 'fg': 'yellow' },
+        'SQL_TABLE':         { 'opts': ('bold',) },
         'HTTP_INFO':         { 'opts': ('bold',) },
         'HTTP_SUCCESS':      { },
         'HTTP_REDIRECT':     { 'fg': 'green' },
@@ -101,12 +101,12 @@ PALETTES = {
         'HTTP_SERVER_ERROR': { 'fg': 'magenta', 'opts': ('bold',) },
     },
     LIGHT_PALETTE: {
-        'ERROR':        { 'fg': 'red', 'opts': ('bold',) },
-        'NOTICE':       { 'fg': 'red' },
-        'SQL_FIELD':    { 'fg': 'green', 'opts': ('bold',) },
-        'SQL_COLTYPE':  { 'fg': 'green' },
-        'SQL_KEYWORD':  { 'fg': 'blue' },
-        'SQL_TABLE':    { 'opts': ('bold',) },
+        'ERROR':             { 'fg': 'red', 'opts': ('bold',) },
+        'NOTICE':            { 'fg': 'red' },
+        'SQL_FIELD':         { 'fg': 'green', 'opts': ('bold',) },
+        'SQL_COLTYPE':       { 'fg': 'green' },
+        'SQL_KEYWORD':       { 'fg': 'blue' },
+        'SQL_TABLE':         { 'opts': ('bold',) },
         'HTTP_INFO':         { 'opts': ('bold',) },
         'HTTP_SUCCESS':      { },
         'HTTP_REDIRECT':     { 'fg': 'green', 'opts': ('bold',) },
@@ -118,7 +118,7 @@ PALETTES = {
 }
 DEFAULT_PALETTE = DARK_PALETTE
 
-def parse_color_setting(config_string):
+def parse_color_setting(config_string, palettes=PALETTES):
     """Parse a DJANGO_COLORS environment variable to produce the system palette
 
     The general form of a pallete definition is:
@@ -135,6 +135,9 @@ def parse_color_setting(config_string):
     Specifying a named palette is the same as manually specifying the individual
     definitions for each role. Any individual definitions following the pallete
     definition will augment the base palette definition.
+
+    An alternate dictionary of PALETTES may be provided to extend or override
+    Django's default palettes (e.g. with new roles or different colours).
 
     Valid roles:
         'error', 'notice', 'sql_field', 'sql_coltype', 'sql_keyword', 'sql_table',
