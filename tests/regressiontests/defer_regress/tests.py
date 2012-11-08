@@ -9,7 +9,7 @@ from django.db.models.loading import cache
 from django.test import TestCase
 
 from .models import (ResolveThis, Item, RelatedItem, Child, Leaf, Proxy,
-    SimpleItem, Feature)
+    SimpleItem, Feature, OneToOneItem)
 
 
 class DeferRegressionTest(TestCase):
@@ -110,6 +110,7 @@ class DeferRegressionTest(TestCase):
                 Feature,
                 Item,
                 Leaf,
+                OneToOneItem,
                 Proxy,
                 RelatedItem,
                 ResolveThis,
@@ -141,6 +142,7 @@ class DeferRegressionTest(TestCase):
                 "Leaf_Deferred_name_value",
                 "Leaf_Deferred_second_child_value",
                 "Leaf_Deferred_value",
+                "OneToOneItem",
                 "Proxy",
                 "RelatedItem",
                 "RelatedItem_Deferred_",
@@ -174,3 +176,14 @@ class DeferRegressionTest(TestCase):
         qs = ResolveThis.objects.defer('num')
         self.assertEqual(1, qs.count())
         self.assertEqual('Foobar', qs[0].name)
+
+    def test_reverse_one_to_one_relations(self):
+        item = Item.objects.create(name="first", value=42)
+        OneToOneItem.objects.create(item=item, name="second")
+        self.assertEqual(len(Item.objects.all()), 1)
+        self.assertEqual(len(Item.objects.defer('one_to_one_item__name')), 1)
+        self.assertEqual(len(Item.objects.select_related('one_to_one_item')), 1)
+        self.assertEqual(len(Item.objects.select_related('one_to_one_item').defer('one_to_one_item__name')), 1)
+        self.assertEqual(len(Item.objects.select_related('one_to_one_item').defer('value')), 1)
+        # make sure that `only()` doesn't break when we pass in a reverse relation, rather than a field on the relation.
+        self.assertEqual(len(Item.objects.only('one_to_one_item')), 1)
