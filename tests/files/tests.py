@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 import gzip
+import io
 import shutil
 import tempfile
 
@@ -163,6 +164,12 @@ class FileTests(unittest.TestCase):
         file = SimpleUploadedFile("mode_test.txt", b"content")
         self.assertFalse(hasattr(file, 'mode'))
         g = gzip.GzipFile(fileobj=file)
+
+    def test_universal_newlines(self):
+        # See #8149 for more information.
+        self.assertEqual(
+            list(File(io.BytesIO(b'1\r2\r3'))),
+            ['1\r', '2\r', '3'])
 
 
 class FileMoveSafeTests(unittest.TestCase):
