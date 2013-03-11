@@ -64,6 +64,11 @@ class FileTests(unittest.TestCase):
         self.assertFalse(hasattr(file, 'mode'))
         gzip.GzipFile(fileobj=file)
 
+    def test_universal_newlines(self):
+        # See #8149 for more information.
+        self.assertEqual(
+            list(File(BytesIO(b'1\r2\r3'))),
+            ['1\r', '2\r', '3'])
 
 class NoNameFileTestCase(unittest.TestCase):
     """
