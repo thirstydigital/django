@@ -144,10 +144,6 @@ class UpdateQuery(Query):
         Used by add_update_values() as well as the "fast" update path when
         saving models.
         """
-        # Check that no Promise object passes to the query. Refs #10498.
-        values_seq = [(value[0], value[1], force_text(value[2]))
-                      if isinstance(value[2], Promise) else value
-                      for value in values_seq]
         self.values.extend(values_seq)
 
     def add_related_update(self, model, field, value):
@@ -206,12 +202,6 @@ class InsertQuery(Query):
         into the query, for example.
         """
         self.fields = fields
-        # Check that no Promise object reaches the DB. Refs #10498.
-        for field in fields:
-            for obj in objs:
-                value = getattr(obj, field.attname)
-                if isinstance(value, Promise):
-                    setattr(obj, field.attname, force_text(value))
         self.objs = objs
         self.raw = raw
 
