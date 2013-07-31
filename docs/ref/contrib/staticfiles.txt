@@ -346,7 +346,8 @@ This view function serves static files in development.
 
 .. warning::
 
-    This view will only work if :setting:`DEBUG` is ``True``.
+    This view will only work if :setting:`DEBUG` is ``True``. Otherwise, it will
+    raise the :exc:`~django.http.Http404` exception.
 
     That's because this view is **grossly inefficient** and probably
     **insecure**. This is only intended for local development, and should
