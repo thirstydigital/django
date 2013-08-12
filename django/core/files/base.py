@@ -1,4 +1,5 @@
 import os
+import re
 
 from django.utils.encoding import smart_str, smart_unicode
 
@@ -99,9 +100,7 @@ class File(object):
         # Iterate over this file-like object by newlines
         buffer_ = None
         for chunk in self.chunks():
-            chunk_buffer = StringIO(chunk)
-
-            for line in chunk_buffer:
+            for line in re.findall(r'[^\r\n]+(?:\r\n|\r|\n)?|(?:\r\n|\r|\n)', chunk):
                 if buffer_:
                     line = buffer_ + line
                     buffer_ = None
