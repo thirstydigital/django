@@ -100,14 +100,17 @@ class CommonMiddleware(object):
         if settings.USE_ETAGS:
             if response.has_header('ETag'):
                 etag = response['ETag']
-            else:
+            elif not response.content_generator:
                 etag = '"%s"' % md5_constructor(response.content).hexdigest()
-            if response.status_code >= 200 and response.status_code < 300 and request.META.get('HTTP_IF_NONE_MATCH') == etag:
-                cookies = response.cookies
-                response = http.HttpResponseNotModified()
-                response.cookies = cookies
-            else:
-                response['ETag'] = etag
+            try:
+                if response.status_code >= 200 and response.status_code < 300 and request.META.get('HTTP_IF_NONE_MATCH') == etag:
+                    cookies = response.cookies
+                    response = http.HttpResponseNotModified()
+                    response.cookies = cookies
+                else:
+                    response['ETag'] = etag
+            except NameError:
+                pass
 
         return response
 
