@@ -825,8 +825,9 @@ class MultiValueField(Field):
         # Set 'required' to False on the individual fields, because the
         # required validation will be handled by MultiValueField, not by those
         # individual fields.
-        for f in fields:
-            f.required = False
+        if not self.required:
+            for f in fields:
+                f.required = False
         self.fields = fields
 
     def validate(self, value):
@@ -856,7 +857,7 @@ class MultiValueField(Field):
                 field_value = value[i]
             except IndexError:
                 field_value = None
-            if self.required and field_value in validators.EMPTY_VALUES:
+            if field.required and field_value in validators.EMPTY_VALUES:
                 raise ValidationError(self.error_messages['required'])
             try:
                 clean_data.append(field.clean(field_value))
