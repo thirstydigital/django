@@ -15,6 +15,16 @@ import sys
 import urllib
 import warnings
 
+from django.conf import settings
+if settings.USE_MULTITHREADED_SERVER:
+    # This creates a base HTTPServer class that supports multithreading
+    import BaseHTTPServer, SocketServer
+    class HTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+        def __init__(self, server_address, RequestHandlerClass=None):
+            BaseHTTPServer.HTTPServer.__init__(self, server_address, RequestHandlerClass)
+else:
+    from BaseHTTPServer import HTTPServer
+
 from django.core.management.color import color_style
 from django.utils.http import http_date
 from django.utils._os import safe_join
