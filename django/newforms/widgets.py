@@ -215,9 +215,19 @@ class Select(Widget):
         # Normalize to string.
         str_value = force_unicode(value)
         for option_value, option_label in chain(self.choices, choices):
-            option_value = force_unicode(option_value)
-            selected_html = (option_value == str_value) and u' selected="selected"' or ''
-            output.append(u'<option value="%s"%s>%s</option>' % (
+            if type(option_label) in (list, tuple):
+                output.append(u'<optgroup label="%s">' % escape(force_unicode(option_value)))
+                for group_option_value, group_option_label in option_label:
+                    group_option_value = force_unicode(group_option_value)
+                    selected_html = (group_option_value == str_value) and u' selected="selected"' or ''
+                    output.append(u'<option value="%s"%s>%s</option>' % (
+                        escape(group_option_value), selected_html,
+                        conditional_escape(force_unicode(group_option_label))))
+                output.append(u'</optgroup>')
+            else:
+                option_value = force_unicode(option_value)
+                selected_html = (option_value == str_value) and u' selected="selected"' or ''
+                output.append(u'<option value="%s"%s>%s</option>' % (
                     escape(option_value), selected_html,
                     conditional_escape(force_unicode(option_label))))
         output.append(u'</select>')

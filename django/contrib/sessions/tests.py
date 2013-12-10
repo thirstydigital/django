@@ -16,6 +16,19 @@ True
 'dog'
 >>> db_session.pop('some key', 'does not exist')
 'does not exist'
+>>> db_session.get_messages()
+[]
+>>> db_session.create_message('first post')
+>>> db_session.get_messages()
+['first post']
+>>> db_session.get_and_delete_messages()
+['first post']
+>>> db_session.get_and_delete_messages()
+[]
+>>> db_session.create_message('hello')
+>>> db_session.create_message('world')
+>>> db_session.get_and_delete_messages()
+['hello', 'world']
 >>> db_session.save()
 >>> db_session.exists(db_session.session_key)
 True
@@ -33,6 +46,19 @@ True
 'dog'
 >>> file_session.pop('some key', 'does not exist')
 'does not exist'
+>>> file_session.get_messages()
+[]
+>>> file_session.create_message('first post')
+>>> file_session.get_messages()
+['first post']
+>>> file_session.get_and_delete_messages()
+['first post']
+>>> file_session.get_and_delete_messages()
+[]
+>>> file_session.create_message('hello')
+>>> file_session.create_message('world')
+>>> file_session.get_and_delete_messages()
+['hello', 'world']
 >>> file_session.save()
 >>> file_session.exists(file_session.session_key)
 True
@@ -57,6 +83,19 @@ True
 'dog'
 >>> cache_session.pop('some key', 'does not exist')
 'does not exist'
+>>> cache_session.get_messages()
+[]
+>>> cache_session.create_message('first post')
+>>> cache_session.get_messages()
+['first post']
+>>> cache_session.get_and_delete_messages()
+['first post']
+>>> cache_session.get_and_delete_messages()
+[]
+>>> cache_session.create_message('hello')
+>>> cache_session.create_message('world')
+>>> cache_session.get_and_delete_messages()
+['hello', 'world']
 >>> cache_session.save()
 >>> cache_session.delete(cache_session.session_key)
 >>> cache_session.exists(cache_session.session_key)

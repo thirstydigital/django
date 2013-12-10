@@ -335,7 +335,13 @@ class Model(object):
 
     def _get_FIELD_display(self, field):
         value = getattr(self, field.attname)
-        return force_unicode(dict(field.choices).get(value, value), strings_only=True)
+        flatchoices = []
+        for choice in field.choices:
+            if type(choice[1]) in (list, tuple):
+                flatchoices.extend(choice[1])
+            else:
+                flatchoices.append(choice)
+        return force_unicode(dict(flatchoices).get(value, value), strings_only=True)
 
     def _get_next_or_previous_by_FIELD(self, field, is_next, **kwargs):
         qn = connection.ops.quote_name

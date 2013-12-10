@@ -18,6 +18,7 @@ class SessionBase(object):
     """
     TEST_COOKIE_NAME = 'testcookie'
     TEST_COOKIE_VALUE = 'worked'
+    MESSAGES_NAME = '_messages'
 
     def __init__(self, session_key=None):
         self._session_key = session_key
@@ -67,6 +68,20 @@ class SessionBase(object):
 
     def delete_test_cookie(self):
         del self[self.TEST_COOKIE_NAME]
+
+    def get_messages(self):
+            return self.get(self.MESSAGES_NAME, [])
+
+    def get_and_delete_messages(self):
+            return self.pop(self.MESSAGES_NAME, [])
+
+    def create_message(self, message):
+        messages = self.get(self.MESSAGES_NAME)
+        if messages is None:
+            messages = []
+            self[self.MESSAGES_NAME] = messages
+        messages.append(message)
+        self.modified = True
 
     def encode(self, session_dict):
         "Returns the given session dictionary pickled and encoded as a string."

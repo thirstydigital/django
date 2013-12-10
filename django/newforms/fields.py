@@ -536,7 +536,9 @@ class BooleanField(Field):
         # will submit for False. Because bool("True") == True, we don't need to
         # handle that explicitly.
         if value == 'False':
-            return False
+            value = False
+        if self.required and not value:
+            raise ValidationError(self.error_messages['required'])
         return bool(value)
 
 class NullBooleanField(BooleanField):
@@ -582,7 +584,13 @@ class ChoiceField(Field):
         value = smart_unicode(value)
         if value == u'':
             return value
-        valid_values = set([smart_unicode(k) for k, v in self.choices])
+        valid_values = [] 
+        for k, v in self.choices: 
+            if type(v) in (tuple, list): 
+                valid_values.extend([k2[0] for k2 in v]) 
+            else:
+                valid_values.append(k) 
+        valid_values = set([smart_unicode(v) for v in valid_values])        
         if value not in valid_values:
             raise ValidationError(self.error_messages['invalid_choice'] % {'value': value})
         return value
@@ -607,7 +615,13 @@ class MultipleChoiceField(ChoiceField):
             raise ValidationError(self.error_messages['invalid_list'])
         new_value = [smart_unicode(val) for val in value]
         # Validate that each value in the value list is in self.choices.
-        valid_values = set([smart_unicode(k) for k, v in self.choices])
+        valid_values = [] 
+        for k, v in self.choices: 
+            if type(v) in (tuple, list): 
+                valid_values.extend([k2[0] for k2 in v]) 
+            else:
+                valid_values.append(k) 
+        valid_values = set([smart_unicode(v) for v in valid_values])        
         for val in new_value:
             if val not in valid_values:
                 raise ValidationError(self.error_messages['invalid_choice'] % {'value': val})
