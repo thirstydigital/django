@@ -292,11 +292,6 @@ class Query(object):
             grouping = self.get_grouping()
             result.append('GROUP BY %s' % ', '.join(grouping))
 
-        if self.having:
-            having, h_params = self.get_having()
-            result.append('HAVING %s' % ', '.join(having))
-            params.extend(h_params)
-
         if ordering:
             result.append('ORDER BY %s' % ', '.join(ordering))
 
@@ -578,24 +573,6 @@ class Query(object):
                 result.append(str(col))
         return result
 
-    def get_having(self):
-        """
-        Returns a tuple representing the SQL elements in the "having" clause.
-        By default, the elements of self.having have their as_sql() method
-        called or are returned unchanged (if they don't have an as_sql()
-        method).
-        """
-        result = []
-        params = []
-        for elt in self.having:
-            if hasattr(elt, 'as_sql'):
-                sql, params = elt.as_sql()
-                result.append(sql)
-                params.extend(params)
-            else:
-                result.append(elt)
-        return result, params
-
     def get_ordering(self):
         """
         Returns list representing the SQL elements in the "order by" clause.
@@ -608,7 +585,7 @@ class Query(object):
         if self.extra_order_by:
             ordering = self.extra_order_by
         elif not self.default_ordering:
-            ordering = self.order_by
+            ordering = []
         else:
             ordering = self.order_by or self.model._meta.ordering
         qn = self.quote_name_unless_alias
@@ -808,7 +785,6 @@ class Query(object):
         self.where.relabel_aliases(change_map)
         for pos, col in enumerate(self.select):
             if isinstance(col, (list, tuple)):
-                old_alias = col[0]
                 self.select[pos] = (change_map.get(old_alias, old_alias), col[1])
             else:
                 col.relabel_aliases(change_map)
@@ -1491,12 +1467,12 @@ class Query(object):
         clamped to any existing high value.
         """
         if high is not None:
-            if self.high_mark is not None:
+            if self.high_mark:
                 self.high_mark = min(self.high_mark, self.low_mark + high)
             else:
                 self.high_mark = self.low_mark + high
         if low is not None:
-            if self.high_mark is not None:
+            if self.high_mark:
                 self.low_mark = min(self.high_mark, self.low_mark + low)
             else:
                 self.low_mark = self.low_mark + low

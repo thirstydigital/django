@@ -105,6 +105,7 @@ class AdminSite(object):
         The default implementation checks that LogEntry, ContentType and the
         auth context processor are installed.
         """
+        from django.conf import settings
         from django.contrib.admin.models import LogEntry
         from django.contrib.contenttypes.models import ContentType
 
@@ -148,9 +149,9 @@ class AdminSite(object):
             return self.password_change_done(request)
         elif url == 'jsi18n':
             return self.i18n_javascript(request)
-        # URLs starting with 'r/' are for the "View on site" links.
+        # urls starting with 'r/' are for the "show in web" links
         elif url.startswith('r/'):
-            from django.contrib.contenttypes.views import shortcut
+            from django.views.defaults import shortcut
             return shortcut(request, *url.split('/')[1:])
         else:
             if '/' in url:
@@ -295,7 +296,7 @@ class AdminSite(object):
                     else:
                         app_dict[app_label] = {
                             'name': app_label.title(),
-                            'app_url': app_label + '/',
+                            'app_url': app_label,
                             'has_module_perms': has_module_perms,
                             'models': [model_dict],
                         }

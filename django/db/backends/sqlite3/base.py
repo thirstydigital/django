@@ -14,17 +14,16 @@ from django.db.backends.sqlite3.introspection import DatabaseIntrospection
 try:
     try:
         from sqlite3 import dbapi2 as Database
-    except ImportError, e1:
+    except ImportError:
         from pysqlite2 import dbapi2 as Database
-except ImportError, exc:
+except ImportError, e:
     import sys
     from django.core.exceptions import ImproperlyConfigured
     if sys.version_info < (2, 5, 0):
         module = 'pysqlite2'
     else:
         module = 'sqlite3'
-        exc = e1
-    raise ImproperlyConfigured, "Error loading %s module: %s" % (module, exc)
+    raise ImproperlyConfigured, "Error loading %s module: %s" % (module, e)
 
 try:
     import decimal

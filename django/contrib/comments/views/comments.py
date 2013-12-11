@@ -7,7 +7,6 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.html import escape
-from django.views.decorators.http import require_POST
 from django.contrib import comments
 from django.contrib.comments import signals
 
@@ -29,11 +28,16 @@ def post_comment(request, next=None):
     HTTP POST is required. If ``POST['submit'] == "preview"`` or if there are
     errors a preview template, ``comments/preview.html``, will be rendered.
     """
+
+    # Require POST
+    if request.method != 'POST':
+        return http.HttpResponseNotAllowed(["POST"])
+
     # Fill out some initial data fields from an authenticated user, if present
     data = request.POST.copy()
     if request.user.is_authenticated():
         if not data.get('name', ''):
-            data["name"] = request.user.get_full_name() or request.user.username
+            data["name"] = request.user.get_full_name()
         if not data.get('email', ''):
             data["email"] = request.user.email
 
@@ -58,7 +62,8 @@ def post_comment(request, next=None):
                 (escape(ctype), escape(object_pk)))
 
     # Do we want to preview the comment?
-    preview = "preview" in data
+    preview = data.get("submit", "").lower() == "preview" or \
+              data.get("preview", None) is not None
 
     # Construct the comment form
     form = comments.get_form()(target, data=data)
@@ -80,7 +85,7 @@ def post_comment(request, next=None):
             template_list, {
                 "comment" : form.data.get("comment", ""),
                 "form" : form,
-            },
+            }, 
             RequestContext(request, {})
         )
 
@@ -111,8 +116,6 @@ def post_comment(request, next=None):
     )
 
     return next_redirect(data, next, comment_done, c=comment._get_pk_val())
-
-post_comment = require_POST(post_comment)
 
 comment_done = confirmation_view(
     template = "comments/posted.html",

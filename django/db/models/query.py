@@ -15,9 +15,6 @@ from django.utils.datastructures import SortedDict
 CHUNK_SIZE = 100
 ITER_CHUNK_SIZE = CHUNK_SIZE
 
-# The maximum number of items to display in a QuerySet.__repr__
-REPR_OUTPUT_SIZE = 20
-
 # Pull into this namespace for backwards compatibility.
 EmptyResultSet = sql.EmptyResultSet
 
@@ -144,10 +141,7 @@ class QuerySet(object):
         return obj_dict
 
     def __repr__(self):
-        data = list(self[:REPR_OUTPUT_SIZE + 1])
-        if len(data) > REPR_OUTPUT_SIZE:
-            data[-1] = "...(remaining elements truncated)..."
-        return repr(data)
+        return repr(list(self))
 
     def __len__(self):
         # Since __len__ is called quite frequently (for example, as part of

@@ -245,18 +245,13 @@ class EmailMessage(object):
                 else:
                     msg.attach(self._create_attachment(*attachment))
         msg['Subject'] = self.subject
-        msg['From'] = self.from_email
+        msg['From'] = self.extra_headers.get('From', self.from_email)
         msg['To'] = ', '.join(self.to)
-
-        # Email header names are case-insensitive (RFC 2045), so we have to
-        # accommodate that when doing comparisons.
-        header_names = [key.lower() for key in self.extra_headers]
-        if 'date' not in header_names:
-            msg['Date'] = formatdate()
-        if 'message-id' not in header_names:
-            msg['Message-ID'] = make_msgid()
+        msg['Date'] = formatdate()
+        msg['Message-ID'] = make_msgid()
         for name, value in self.extra_headers.items():
-            msg[name] = value
+            if name != 'From':
+                msg[name] = value
         return msg
 
     def recipients(self):

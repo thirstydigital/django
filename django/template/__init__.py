@@ -809,7 +809,7 @@ class VariableNode(Node):
         else:
             return force_unicode(output)
 
-def generic_tag_compiler(params, defaults, name, node_class, parser, token):
+def generic_tag_compiler(params, defaults, name, node_class, parser, token, takes_context=False, takes_nodelist=False):
     "Returns a template.Node subclass."
     bits = token.split_contents()[1:]
     bmax = len(params)
@@ -821,6 +821,12 @@ def generic_tag_compiler(params, defaults, name, node_class, parser, token):
         else:
             message = "%s takes between %s and %s arguments" % (name, bmin, bmax)
         raise TemplateSyntaxError(message)
+    if takes_context:
+        node_class = curry(node_class, takes_context=takes_context) 
+    if takes_nodelist:
+        nodelist = parser.parse(('end%s' % name,)) 
+        parser.delete_first_token() 
+        node_class = curry(node_class, nodelist=nodelist) 
     return node_class(bits)
 
 class Library(object):
@@ -876,21 +882,61 @@ class Library(object):
         self.filters[getattr(func, "_decorated_function", func).__name__] = func
         return func
 
-    def simple_tag(self,func):
-        params, xx, xxx, defaults = getargspec(func)
+    def simple_tag(self, compile_function=None, takes_context=None, takes_nodelist=None):
+        def dec(func):
+            params, xx, xxx, defaults = getargspec(func)
+            if takes_context and takes_nodelist:
+                if params[0] == 'context' and params[1] == 'nodelist':
+                    params = params[2:]
+                else:
+                    raise TemplateSyntaxError("Any tag function decorated both with takes_context=True and with takes_nodelist=True must have a first argument of 'context', and a second argument of 'nodelist'")
+            elif takes_nodelist:
+                if params[0] == 'nodelist':
+                    params = params[1:]
+                else:
+                    raise TemplateSyntaxError("Any tag function decorated with takes_nodelist=True must have a first argument of 'nodelist'")
+            elif takes_context:
+                if params[0] == 'context':
+                    params = params[1:]
+                else:
+                    raise TemplateSyntaxError("Any tag function decorated with takes_context=True must have a first argument of 'context'")
 
-        class SimpleNode(Node):
-            def __init__(self, vars_to_resolve):
-                self.vars_to_resolve = map(Variable, vars_to_resolve)
+            class SimpleNode(Node):
+                def __init__(self, vars_to_resolve, takes_context=False, nodelist=None): 
+                    self.vars_to_resolve = map(Variable, vars_to_resolve)
+                    self.takes_context = takes_context
+                    if nodelist is not None:
+                        # Only save the 'nodelist' attribute if it's not None, so that it is picked by the Node.get_nodes_by_type() method.
+                        self.nodelist = nodelist
 
-            def render(self, context):
-                resolved_vars = [var.resolve(context) for var in self.vars_to_resolve]
-                return func(*resolved_vars)
+                def render(self, context):
+                    resolved_vars = [var.resolve(context) for var in self.vars_to_resolve]
+                    if self.takes_context and hasattr(self, 'nodelist'):
+                        func_args = [context, self.nodelist] + resolved_vars
+                    elif hasattr(self, 'nodelist'):
+                        func_args = [self.nodelist] + resolved_vars
+                    elif self.takes_context:
+                        func_args = [context] + resolved_vars
+                    else:
+                        func_args = resolved_vars
+                    return func(*func_args)
 
-        compile_func = curry(generic_tag_compiler, params, defaults, getattr(func, "_decorated_function", func).__name__, SimpleNode)
-        compile_func.__doc__ = func.__doc__
-        self.tag(getattr(func, "_decorated_function", func).__name__, compile_func)
-        return func
+            compile_func = curry(generic_tag_compiler, params, defaults, getattr(func, "_decorated_function", func).__name__, SimpleNode, takes_nodelist=takes_nodelist, takes_context=takes_context)
+            compile_func.__doc__ = func.__doc__
+            self.tag(getattr(func, "_decorated_function", func).__name__, compile_func)
+            return func
+        
+        if takes_context is not None or takes_nodelist is not None:
+            # Examples: @register.simple_tag(takes_context=True) or @register.simple_tag(takes_context=True, takes_nodelist=True)
+            return dec
+        elif compile_function is None:
+            # @register.simple_tag()
+            return dec
+        elif callable(compile_function):
+            # @register.simple_tag
+            return dec(compile_function)
+        else:
+            raise TemplateSyntaxError("Incorrect parameters for the simple_tag decorator.")
 
     def inclusion_tag(self, file_name, context_class=Context, takes_context=False):
         def dec(func):

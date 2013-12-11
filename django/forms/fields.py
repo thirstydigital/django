@@ -28,7 +28,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import smart_unicode, smart_str
 
 from util import ErrorList, ValidationError
-from widgets import TextInput, PasswordInput, HiddenInput, MultipleHiddenInput, FileInput, CheckboxInput, Select, NullBooleanSelect, SelectMultiple, DateTimeInput, TimeInput, SplitHiddenDateTimeWidget
+from widgets import TextInput, PasswordInput, HiddenInput, MultipleHiddenInput, FileInput, CheckboxInput, Select, NullBooleanSelect, SelectMultiple, DateInput, DateTimeInput, TimeInput, SplitDateTimeWidget, SplitHiddenDateTimeWidget
 from django.core.files.uploadedfile import SimpleUploadedFile as UploadedFile
 
 __all__ = (
@@ -283,6 +283,7 @@ DEFAULT_DATE_INPUT_FORMATS = (
 )
 
 class DateField(Field):
+    widget = DateInput
     default_error_messages = {
         'invalid': _(u'Enter a valid date.'),
     }
@@ -379,6 +380,10 @@ class DateTimeField(Field):
         if isinstance(value, list):
             # Input comes from a SplitDateTimeWidget, for example. So, it's two
             # components: date and time.
+            if not [v for v in value if v not in EMPTY_VALUES]:
+                if self.required:
+                    raise ValidationError(self.error_messages['required'])
+                return value
             if len(value) != 2:
                 raise ValidationError(self.error_messages['invalid'])
             value = '%s %s' % tuple(value)
@@ -843,19 +848,20 @@ class FilePathField(ChoiceField):
         self.widget.choices = self.choices
 
 class SplitDateTimeField(MultiValueField):
+    widget = SplitDateTimeWidget
     hidden_widget = SplitHiddenDateTimeWidget
     default_error_messages = {
         'invalid_date': _(u'Enter a valid date.'),
         'invalid_time': _(u'Enter a valid time.'),
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, input_date_formats=None, input_time_formats=None, *args, **kwargs):
         errors = self.default_error_messages.copy()
         if 'error_messages' in kwargs:
             errors.update(kwargs['error_messages'])
         fields = (
-            DateField(error_messages={'invalid': errors['invalid_date']}),
-            TimeField(error_messages={'invalid': errors['invalid_time']}),
+            DateField(input_formats=input_date_formats, error_messages={'invalid': errors['invalid_date']}),
+            TimeField(input_formats=input_time_formats, error_messages={'invalid': errors['invalid_time']}),
         )
         super(SplitDateTimeField, self).__init__(fields, *args, **kwargs)
 

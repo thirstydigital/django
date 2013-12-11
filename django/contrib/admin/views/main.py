@@ -157,17 +157,13 @@ class ChangeList(object):
                     # See whether field_name is a name of a non-field
                     # that allows sorting.
                     try:
-                        if callable(field_name):
-                            attr = field_name
-                        elif hasattr(self.model_admin, field_name):
-                            attr = getattr(self.model_admin, field_name)
-                        else:
-                            attr = getattr(self.model, field_name)
+                        attr = getattr(self.model, field_name)
                         order_field = attr.admin_order_field
                     except AttributeError:
                         pass
                 else:
-                    order_field = f.name
+                    if not isinstance(f.rel, models.ManyToOneRel) or not f.null:
+                        order_field = f.name
             except (IndexError, ValueError):
                 pass # Invalid ordering specified. Just use the default.
         if ORDER_TYPE_VAR in params and params[ORDER_TYPE_VAR] in ('asc', 'desc'):

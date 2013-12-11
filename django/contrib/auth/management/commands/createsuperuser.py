@@ -57,12 +57,10 @@ class Command(BaseCommand):
         # Try to determine the current system user's username to use as a default.
         try:
             import pwd
-            default_username = pwd.getpwuid(os.getuid())[0].replace(' ', '').lower()
-        except (ImportError, KeyError):
-            # KeyError will be raised by getpwuid() if there is no
-            # corresponding entry in the /etc/passwd file (a very restricted
-            # chroot environment, for example).
+        except ImportError:
             default_username = ''
+        else:
+            default_username = pwd.getpwuid(os.getuid())[0].replace(' ', '').lower()
 
         # Determine whether the default username is taken, so we don't display
         # it as an option.

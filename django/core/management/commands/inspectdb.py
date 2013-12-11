@@ -41,17 +41,16 @@ class Command(NoArgsCommand):
             except NotImplementedError:
                 indexes = {}
             for i, row in enumerate(connection.introspection.get_table_description(cursor, table_name)):
-                column_name = row[0]
-                att_name = column_name.lower()
+                att_name = row[0].lower()
                 comment_notes = [] # Holds Field notes, to be displayed in a Python comment.
                 extra_params = {}  # Holds Field parameters such as 'db_column'.
 
-                # If the column name can't be used verbatim as a Python
-                # attribute, set the "db_column" for this Field.
-                if ' ' in att_name or '-' in att_name or keyword.iskeyword(att_name) or column_name != att_name:
-                    extra_params['db_column'] = column_name
-
-                # Modify the field name to make it Python-compatible.
+                # If we need to do field name modifiations, 
+                # remember the original field name
+                if ' ' in att_name or '-' in att_name or keyword.iskeyword(att_name):
+                    extra_params['db_column'] = att_name
+                  
+                # Now modify the field name to make it python compatible.  
                 if ' ' in att_name:
                     att_name = att_name.replace(' ', '_')
                     comment_notes.append('Field renamed to remove spaces.')
@@ -61,8 +60,6 @@ class Command(NoArgsCommand):
                 if keyword.iskeyword(att_name):
                     att_name += '_field'
                     comment_notes.append('Field renamed because it was a Python reserved word.')
-                if column_name != att_name:
-                    comment_notes.append('Field name made lowercase.')
 
                 if i in relations:
                     rel_to = relations[i][1] == table_name and "'self'" or table2model(relations[i][1])
@@ -70,7 +67,7 @@ class Command(NoArgsCommand):
                     if att_name.endswith('_id'):
                         att_name = att_name[:-3]
                     else:
-                        extra_params['db_column'] = column_name
+                        extra_params['db_column'] = att_name
                 else:
                     try:
                         field_type = connection.introspection.data_types_reverse[row[1]]
@@ -93,6 +90,7 @@ class Command(NoArgsCommand):
                         extra_params['decimal_places'] = row[5]
 
                     # Add primary_key and unique, if necessary.
+                    column_name = extra_params.get('db_column', att_name)
                     if column_name in indexes:
                         if indexes[column_name]['primary_key']:
                             extra_params['primary_key'] = True

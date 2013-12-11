@@ -106,7 +106,7 @@ class UpdateQuery(Query):
 
     def clone(self, klass=None, **kwargs):
         return super(UpdateQuery, self).clone(klass,
-                related_updates=self.related_updates.copy(), **kwargs)
+                related_updates=self.related_updates.copy, **kwargs)
 
     def execute_sql(self, result_type=None):
         """
@@ -293,8 +293,7 @@ class InsertQuery(Query):
     def clone(self, klass=None, **kwargs):
         extras = {'columns': self.columns[:], 'values': self.values[:],
                 'params': self.params}
-        extras.update(kwargs)
-        return super(InsertQuery, self).clone(klass, **extras)
+        return super(InsertQuery, self).clone(klass, extras)
 
     def as_sql(self):
         # We don't need quote_name_unless_alias() here, since these are all
@@ -395,7 +394,6 @@ class DateQuery(Query):
         self.select = [select]
         self.select_fields = [None]
         self.select_related = False # See #7097.
-        self.extra_select = {}
         self.distinct = True
         self.order_by = order == 'ASC' and [1] or [-1]
 

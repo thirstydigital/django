@@ -11,7 +11,8 @@ from models import Comment
 from django.utils.encoding import force_unicode
 from django.utils.hashcompat import sha_constructor
 from django.utils.text import get_text_list
-from django.utils.translation import ungettext, ugettext_lazy as _
+from django.utils.translation import ngettext
+from django.utils.translation import ugettext_lazy as _
 
 COMMENT_MAX_LENGTH = getattr(settings,'COMMENT_MAX_LENGTH', 3000)
 
@@ -121,7 +122,7 @@ class CommentForm(forms.Form):
             bad_words = [w for w in settings.PROFANITIES_LIST if w in comment.lower()]
             if bad_words:
                 plural = len(bad_words) > 1
-                raise forms.ValidationError(ungettext(
+                raise forms.ValidationError(ngettext(
                     "Watch your mouth! The word %s is not allowed here.",
                     "Watch your mouth! The words %s are not allowed here.", plural) % \
                     get_text_list(['"%s%s%s"' % (i[0], '-'*(len(i)-2), i[-1]) for i in bad_words], 'and'))
