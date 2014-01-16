@@ -177,6 +177,9 @@ EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 EMAIL_USE_TLS = False
 
+# Whether to use a multi-threaded development server.
+USE_MULTITHREADED_SERVER = False
+
 # List of strings representing installed apps.
 INSTALLED_APPS = ()
 

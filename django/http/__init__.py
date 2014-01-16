@@ -688,6 +688,10 @@ class HttpResponse(object):
                         expires='Thu, 01-Jan-1970 00:00:00 GMT')
 
     def _get_content(self):
+        # consume base content iterator on first access.
+        if self._base_content_is_iter:
+            self._container = [''.join(self._container)]
+            self._base_content_is_iter = False
         if self.has_header('Content-Encoding'):
             return ''.join([str(e) for e in self._container])
         return ''.join([smart_str(e, self._charset) for e in self._container])
@@ -701,6 +705,12 @@ class HttpResponse(object):
             self._base_content_is_iter = False
 
     content = property(_get_content, _set_content)
+
+    def _get_content_generator(self):
+        if self._base_content_is_iter:
+            return (smart_str(item, self._charset) for item in self._container)
+
+    content_generator = property(_get_content_generator)
 
     def __iter__(self):
         self._iterator = iter(self._container)

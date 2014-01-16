@@ -1,4 +1,5 @@
 import os
+import re
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -84,9 +85,7 @@ class File(FileProxyMixin):
         # Iterate over this file-like object by newlines
         buffer_ = None
         for chunk in self.chunks():
-            chunk_buffer = StringIO(chunk)
-
-            for line in chunk_buffer:
+            for line in re.findall(r'[^\r\n]+(?:\r\n|\r|\n)?|(?:\r\n|\r|\n)', chunk):
                 if buffer_:
                     line = buffer_ + line
                     buffer_ = None
