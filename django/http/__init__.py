@@ -654,15 +654,28 @@ class HttpResponse(object):
                         expires='Thu, 01-Jan-1970 00:00:00 GMT')
 
     def _get_content(self):
+        if not self._is_string:
+            self._container = [''.join(self._container)]
+            self._is_string = True
         if self.has_header('Content-Encoding'):
             return ''.join(self._container)
         return smart_str(''.join(self._container), self._charset)
 
     def _set_content(self, value):
-        self._container = [value]
-        self._is_string = True
+        if not isinstance(value, basestring) and hasattr(value, '__iter__'):
+            self._container = value
+            self._is_string = False
+        else:
+            self._container = [value]
+            self._is_string = True
 
     content = property(_get_content, _set_content)
+
+    def _get_content_generator(self):
+        if not self._is_string:
+            return (smart_str(item, self._charset) for item in self._container)
+
+    content_generator = property(_get_content_generator)
 
     def __iter__(self):
         self._iterator = iter(self._container)
