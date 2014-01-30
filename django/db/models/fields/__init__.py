@@ -792,7 +792,7 @@ class EmailField(CharField):
     description = _("E-mail address")
 
     def __init__(self, *args, **kwargs):
-        kwargs['max_length'] = kwargs.get('max_length', 75)
+        kwargs['max_length'] = kwargs.get('max_length', 255)
         CharField.__init__(self, *args, **kwargs)
 
 class FilePathField(Field):
