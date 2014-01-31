@@ -7,13 +7,23 @@ This is a simple server for use in testing or debugging Django apps. It hasn't
 been reviewed for security issues. Don't use it for production use.
 """
 
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from BaseHTTPServer import BaseHTTPRequestHandler
 import mimetypes
 import os
 import re
 import stat
 import sys
 import urllib
+
+from django.conf import settings
+if settings.USE_MULTITHREADED_SERVER:
+    # This creates a base HTTPServer class that supports multithreading
+    import BaseHTTPServer, SocketServer
+    class HTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+        def __init__(self, server_address, RequestHandlerClass=None):
+            BaseHTTPServer.HTTPServer.__init__(self, server_address, RequestHandlerClass)
+else:
+    from BaseHTTPServer import HTTPServer
 
 from django.utils.http import http_date
 from django.utils._os import safe_join
